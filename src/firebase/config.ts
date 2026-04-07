@@ -1,27 +1,25 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { initializeAuth, indexedDBLocalPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
-// Firebase configuration
-// TODO: Replace with your Firebase project credentials
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID",
-  measurementId: "YOUR_MEASUREMENT_ID"
+  apiKey: 'AIzaSyC2Ar44ScQgfFVu6URqLZ_zc8CGl2J64ZI',
+  authDomain: 'the-barber-mosaic.firebaseapp.com',
+  projectId: 'the-barber-mosaic',
+  storageBucket: 'the-barber-mosaic.firebasestorage.app',
+  messagingSenderId: '412468188187',
+  appId: '1:412468188187:web:1bd028460e7b895ffe14be',
+  measurementId: 'G-JX6P9YMV00',
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize services
-export const auth = getAuth(app);
+export const auth = initializeAuth(app, {
+  persistence: indexedDBLocalPersistence,
+});
+
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 
 export default app;
-
