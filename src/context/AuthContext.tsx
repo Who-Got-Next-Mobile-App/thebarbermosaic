@@ -1,6 +1,6 @@
 /**
  * Stub — full implementation in feat/auth-context PR.
- * Keeps App.tsx compiling during the foundation PR.
+ * Exposes the shape the navigator needs to compile.
  */
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
@@ -11,12 +11,14 @@ interface AuthContextType {
   firebaseUser: FirebaseUser | null;
   role: UserRole | null;
   isAuthLoading: boolean;
+  onboardingComplete: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
   firebaseUser: null,
   role: null,
   isAuthLoading: true,
+  onboardingComplete: false,
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -34,7 +36,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   return (
-    <AuthContext.Provider value={{ firebaseUser, role: null, isAuthLoading }}>
+    <AuthContext.Provider
+      value={{ firebaseUser, role: null, isAuthLoading, onboardingComplete: false }}
+    >
       {children}
     </AuthContext.Provider>
   );
