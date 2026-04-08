@@ -1,0 +1,137 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn() && request.auth.token.role == 'admin';
+    }
+
+    function isBarber(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function isClient(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    // ─── barbers ───────────────────────────────────────────────────────────
+    match /barbers/{barberId} {
+      allow read: if true;
+      allow create: if signedIn() && request.auth.uid == barberId;
+      allow update, delete: if isBarber(barberId) || isAdmin();
+
+      match /services/{serviceId} {
+        allow read: if true;
+        allow write: if isBarber(barberId) || isAdmin();
+      }
+
+      match /availability/{docId} {
+        allow read: if true;
+        allow write: if isBarber(barberId) || isAdmin();
+      }
+
+      match /portfolio/{photoId} {
+        allow read: if true;
+        allow write: if isBarber(barberId) || isAdmin();
+      }
+
+      match /promoCodes/{codeId} {
+        allow read: if true;
+        allow write: if isBarber(barberId) || isAdmin();
+      }
+    }
+
+    // ─── studios ─────────────────────────────────────────────────────────────
+    match /studios/{studioId} {
+      allow read: if true;
+      allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid;
+      allow update, delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
+      allow write: if isAdmin();
+    }
+
+    // ─── clients ─────────────────────────────────────────────────────────────
+    match /clients/{clientId} {
+      allow read, write: if isClient(clientId) || isAdmin();
+    }
+
+    // ─── appointments ────────────────────────────────────────────────────────
+    match /appointments/{appointmentId} {
+      allow read: if signedIn() &&
+        (resource.data.barberId == request.auth.uid ||
+         resource.data.clientId == request.auth.uid);
+      allow create: if signedIn() &&
+        request.resource.data.clientId == request.auth.uid;
+      allow update: if signedIn() &&
+        (resource.data.barberId == request.auth.uid ||
+         resource.data.clientId == request.auth.uid);
+      allow delete: if false;
+    }
+
+    // ─── payments (functions-only writes) ─────────────────────────────────────
+    match /payments/{paymentId} {
+      allow read: if signedIn() &&
+        (resource.data.barberId == request.auth.uid ||
+         resource.data.clientId == request.auth.uid);
+      allow write: if false;
+    }
+
+    // ─── tax_allocations ─────────────────────────────────────────────────────
+    match /tax_allocations/{id} {
+      allow read: if signedIn() && resource.data.barberId == request.auth.uid;
+      allow write: if false;
+    }
+
+    // ─── reviews ───────────────────────────────────────────────────────────
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if false;
+      allow update: if signedIn() &&
+        resource.data.barberId == request.auth.uid;
+      allow delete: if false;
+    }
+
+    // ─── message_threads ───────────────────────────────────────────────────
+    match /message_threads/{threadId} {
+      allow read: if signedIn() &&
+        (resource.data.barberId == request.auth.uid ||
+         resource.data.clientId == request.auth.uid);
+      allow create: if signedIn() &&
+        (request.resource.data.barberId == request.auth.uid ||
+         request.resource.data.clientId == request.auth.uid);
+      allow update: if signedIn() &&
+        (resource.data.barberId == request.auth.uid ||
+         resource.data.clientId == request.auth.uid);
+
+      match /messages/{messageId} {
+        allow read, create: if signedIn() &&
+          (get(/databases/$(database)/documents/message_threads/$(threadId)).data.barberId == request.auth.uid ||
+           get(/databases/$(database)/documents/message_threads/$(threadId)).data.clientId == request.auth.uid);
+        allow update: if signedIn() &&
+          (get(/databases/$(database)/documents/message_threads/$(threadId)).data.barberId == request.auth.uid ||
+           get(/databases/$(database)/documents/message_threads/$(threadId)).data.clientId == request.auth.uid);
+      }
+    }
+
+    // ─── platform_config ─────────────────────────────────────────────────────
+    match /platform_config/{docId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    // ─── notifications_log ───────────────────────────────────────────────────
+    match /notifications_log/{id} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow write: if false;
+    }
+
+    // ─── client_notes (private barber notes) ────────────────────────────────
+    match /client_notes/{docId} {
+      allow read, write: if signedIn() && resource.data.barberId == request.auth.uid;
+    }
+  }
+}
